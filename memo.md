@@ -13,6 +13,8 @@
 
 [heap sort](https://github.com/ArminGh02/sorting-algorithms/blob/main/include/sorting_algorithms/sort.hpp#L193)
 
+[thread pool 구현](https://modoocode.com/285)
+
 테스트 데이터 종류:
 1. 완전히 섞인 데이터
 2. 약간 정렬되어 있는 데이터
