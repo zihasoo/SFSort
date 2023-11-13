@@ -9,7 +9,6 @@
 
 template<typename T>
 class data_generator {
-    const int n;
     std::vector<T> origin;
     std::mt19937 gen{15};
     std::uniform_int_distribution<int> num_uni{-n, n};
@@ -26,7 +25,7 @@ class data_generator {
     }
 
 public:
-    explicit data_generator(int s):n(s), origin(n) {}
+    explicit data_generator(int s): origin(s) {}
 
     void set_data_by_type(int type) {
         switch (type) {
@@ -70,6 +69,10 @@ public:
             default:
                 return "wrong type";
         }
+    }
+
+    void set_size(int s) {
+        origin.resize(s);
     }
 
     std::vector<T> get_data() {

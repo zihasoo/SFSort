@@ -1,4 +1,5 @@
 #include <utility>
+#include <algorithm>
 
 #define THREADS 512 // 2^9
 #define BLOCKS 32768 // 2^15

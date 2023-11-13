@@ -1,6 +1,7 @@
 #include <iostream>
 #include <execution>
 #include <chrono>
+#include <utility>
 
 #include "sf_sort.hpp"
 #include "data_generator.hpp"
@@ -9,7 +10,7 @@ using namespace std;
 using namespace chrono;
 using hc = chrono::high_resolution_clock;
 
-const int n = 50000;
+const int n = 5000000;
 data_generator<int> generator{n};
 
 ostream &operator<<(ostream &out, const vector<int> &v) {
@@ -54,27 +55,31 @@ void print_proc_time(func_t f, arg_t... args) {
 }
 
 void test_funcs() {
-    vector<function<void(void)>> funcs = {
-            []() {
-                vector<int> data = generator.get_data();
-                quick_sort(data.begin(), data.end(), data.size(), less<>());
-            },
-            []() {
-                vector<int> data = generator.get_data();
+    vector<int> data;
+    vector<pair<string_view, function<void(void)>>> funcs = {
+            {"intro sort",[&data](){
+                intro_sort(data.begin(), data.end(), data.end() - data.begin(), less<>());
+            }},
+            {"stl sort", [&data]() {
                 sort(data.begin(), data.end());
-            }
+            }},
+            {"par stl sort", [&data]() {
+                sort(execution::par_unseq,data.begin(), data.end());
+            }}
     };
 
-    vector<string_view> func_names = {"intro sort", "stl sort"};
+    for (int s = 16; s < 100'000; s *= 2) {
 
-    for (int i = 1; i <= 6; i++) {
-        generator.set_data_by_type(i);
-        cout << generator.get_data_name(i) << ":\n";
-        for (int j = 0; j < funcs.size(); j++) {
-            cout << func_names[j] << ": ";
-            print_proc_time(funcs[j]);
+        for (int i = 1; i <= 6; i++) {
+            generator.set_data_by_type(i);
+            cout << generator.get_data_name(i) << ":\n";
+            for (auto &func: funcs) {
+                cout << func.first << ": ";
+                data = generator.get_data();
+                print_proc_time(func.second);
+            }
+            cout << '\n';
         }
-        cout << '\n';
     }
 }
 
