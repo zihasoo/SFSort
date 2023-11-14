@@ -66,7 +66,7 @@ void intro_sort(iter start, iter end, unsigned int depth_check, comp cmp) {
     if (depth_check <= 0) {
         std::make_heap(start, end, cmp);
         std::sort_heap(start, end, cmp);
-        return ;
+        return;
     }
 
     iter mid = start + (end - start) / 2;
@@ -79,7 +79,7 @@ void intro_sort(iter start, iter end, unsigned int depth_check, comp cmp) {
 }
 
 template<typename iter, typename comp>
-void par_intro_sort(iter start, iter end, int depth_check, comp cmp) {
+void par_intro_sort(iter start, iter end, unsigned int depth_check, unsigned int threshold, comp cmp, thread_pool &tp) {
     if (start + 1 >= end) return;
 
     if (end - start <= 32) {
@@ -90,7 +90,7 @@ void par_intro_sort(iter start, iter end, int depth_check, comp cmp) {
     if (depth_check <= 0) {
         std::make_heap(start, end, cmp);
         std::sort_heap(start, end, cmp);
-        return ;
+        return;
     }
 
     iter mid = start + (end - start) / 2;
@@ -98,13 +98,12 @@ void par_intro_sort(iter start, iter end, int depth_check, comp cmp) {
     iter pivot = partition(start, start, end, cmp);
 
     depth_check = (depth_check >> 1) + (depth_check >> 2);
-    if (end - start <= 1024) {
+    if (end - start <= threshold) {
         intro_sort(start, pivot, depth_check, cmp);
         intro_sort(pivot + 1, end, depth_check, cmp);
     } else {
-        auto left_thread = std::thread(par_intro_sort<iter, comp>, start, pivot, depth_check, cmp);
-        par_intro_sort(pivot + 1, end, depth_check, cmp);
-        left_thread.join();
+        tp.register_job([start, pivot, depth_check, threshold, cmp, &tp]() { par_intro_sort(start, pivot, depth_check, threshold, cmp, tp); });
+        par_intro_sort(pivot + 1, end, depth_check, threshold, cmp, tp);
     }
 }
 
