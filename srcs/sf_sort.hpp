@@ -7,7 +7,6 @@
 #include <execution>
 #include <algorithm>
 
-#include "bitonic_sort.hpp"
 #include "thread_pool.h"
 
 template<typename iter, typename comp>
@@ -72,7 +71,7 @@ void intro_sort(iter start, iter end, unsigned int depth_check, comp cmp) {
 
     iter mid = start + (end - start) / 2;
     set_pivot(start, start + 1, mid, end - 1, cmp);
-    iter pivot = partition(start, start + 1, end - 1, cmp);
+    iter pivot = partition(start, start, end, cmp);
 
     depth_check = (depth_check >> 1) + (depth_check >> 2);
     intro_sort(start, pivot, depth_check, cmp);
@@ -96,7 +95,7 @@ void par_intro_sort(iter start, iter end, int depth_check, comp cmp) {
 
     iter mid = start + (end - start) / 2;
     set_pivot(start, start + 1, mid, end - 1, cmp);
-    iter pivot = partition(start, start + 1, end - 1, cmp);
+    iter pivot = partition(start, start, end, cmp);
 
     depth_check = (depth_check >> 1) + (depth_check >> 2);
     if (end - start <= 1024) {

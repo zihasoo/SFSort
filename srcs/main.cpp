@@ -62,16 +62,13 @@ void test_funcs() {
             {"par", [&data]() {
                 sort(execution::par_unseq, data.begin(), data.end());
             }},
-            {"my",  [&data]() {
-                intro_sort(data.begin(), data.end(), data.size(), less<>());
-            }},
     };
 
     cout << "     size | ";
     for (auto &func: funcs)
         cout << func.first << " | ";
     cout << '\n';
-    for (int s = 16; s < 1'000'000; s *= 2) {
+    for (int s = 2; s < 100'000'000; s += (s >> 1)) {
         gen.set_size(s);
         cout.width(9);
         cout << s << " | ";
@@ -93,13 +90,12 @@ void test_funcs() {
 }
 
 void test() {
-    vector<int> data;
-    gen.set_size(200'000'000);
+    gen.set_size(20'000'000);
     ll sum = 0;
     cout << "intro sort\n";
     for (int t = 1; t <= 6; t++) {
         gen.set_data_by_type(t);
-        data = gen.get_data();
+        auto& data = gen.get_data_ref();
         ll a = get_proc_time(intro_sort<vector<int>::iterator, less<>>, data.begin(), data.end(), data.size(),
                              less<>{});
         sum += a;
@@ -115,7 +111,7 @@ void test() {
     cout << "stl sort\n";
     for (int t = 1; t <= 6; t++) {
         gen.set_data_by_type(t);
-        data = gen.get_data();
+        auto& data = gen.get_data_ref();
         ll a = get_proc_time(sort<vector<int>::iterator>, data.begin(), data.end());
         sum += a;
         cout << gen.get_data_name(t) << ": ";
@@ -128,8 +124,8 @@ void test() {
 }
 
 int main() {
-    //test_funcs();
-    test();
+    test_funcs();
+    //test();
 
     return 0;
 }

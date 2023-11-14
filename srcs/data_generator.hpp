@@ -83,6 +83,10 @@ public:
         return origin;
     }
 
+    std::vector<T>& get_data_ref() {
+        return origin;
+    }
+
     void all_rand() {
         for (T &x: origin) {
             x = num_uni(gen);
