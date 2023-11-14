@@ -11,8 +11,8 @@ template<typename T>
 class data_generator {
     std::vector<T> origin;
     std::mt19937 gen{15};
-    std::uniform_int_distribution<int> num_uni{-n, n};
-    std::uniform_int_distribution<int> idx_uni{0, n - 1};
+    std::uniform_int_distribution<int> num_uni;
+    std::uniform_int_distribution<int> idx_uni;
 
     void random_swap() {
         int s = std::max(origin.size() / 5, 1ull);
@@ -25,7 +25,9 @@ class data_generator {
     }
 
 public:
-    explicit data_generator(int s): origin(s) {}
+    data_generator() = default;
+
+    explicit data_generator(int s) : origin(s), num_uni(-s, s), idx_uni(0, s - 1) {}
 
     void set_data_by_type(int type) {
         switch (type) {
@@ -73,6 +75,8 @@ public:
 
     void set_size(int s) {
         origin.resize(s);
+        num_uni.param(std::uniform_int<int>::param_type(-s, s));
+        idx_uni.param(std::uniform_int<int>::param_type(0, s - 1));
     }
 
     std::vector<T> get_data() {
@@ -80,7 +84,7 @@ public:
     }
 
     void all_rand() {
-        for(T& x : origin) {
+        for (T &x: origin) {
             x = num_uni(gen);
         }
     }

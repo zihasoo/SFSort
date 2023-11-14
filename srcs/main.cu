@@ -9,9 +9,9 @@
 using namespace std;
 using namespace chrono;
 using hc = chrono::high_resolution_clock;
+using ll = long long;
 
-const int n = 5000000;
-data_generator<int> generator{n};
+data_generator<int> gen;
 
 ostream &operator<<(ostream &out, const vector<int> &v) {
     if (v.empty()) {
@@ -25,66 +25,111 @@ ostream &operator<<(ostream &out, const vector<int> &v) {
     return out;
 }
 
-void time_printer(auto d) {
-    auto c = d.count();
+void pretty_print_time(ll c) {
     if (c >= 1000ll * 1000 * 1000) {
-        cout << duration_cast<milliseconds>(d).count() / 1000.0 << "s\n";
+        cout << (c / (1000ll * 1000)) / 1000.0 << "s";
     } else if (c >= 1000ll * 1000) {
-        cout << duration_cast<microseconds>(d).count() / 1000.0 << "ms\n";
+        cout << (c / 1000l) / 1000.0 << "ms";
     } else if (c >= 1000ll) {
-        cout << c / 1000.0 << "us\n";
+        cout << c / 1000.0 << "us";
     } else {
-        cout << c << "ns\n";
+        cout << c << "ns";
     }
 }
 
 template<typename func_t>
-void print_proc_time(func_t f) {
+ll get_proc_time(func_t f) {
     auto st_t = hc::now();
     f();
     auto ed_t = hc::now();
-    time_printer(ed_t - st_t);
+    return (ed_t - st_t).count();
 }
 
 template<typename func_t, typename... arg_t>
-void print_proc_time(func_t f, arg_t... args) {
+ll get_proc_time(func_t f, arg_t... args) {
     auto st_t = hc::now();
-    f(forward<arg_t>(args)...);
+    f(std::forward<arg_t>(args)...);
     auto ed_t = hc::now();
-    time_printer(ed_t - st_t);
+    return (ed_t - st_t).count();
 }
 
 void test_funcs() {
     vector<int> data;
     vector<pair<string_view, function<void(void)>>> funcs = {
-            {"intro sort",[&data](){
-                intro_sort(data.begin(), data.end(), data.end() - data.begin(), less<>());
-            }},
-            {"stl sort", [&data]() {
+            {"seq", [&data]() {
                 sort(data.begin(), data.end());
             }},
-            {"par stl sort", [&data]() {
-                sort(execution::par_unseq,data.begin(), data.end());
-            }}
+            {"par", [&data]() {
+                sort(execution::par_unseq, data.begin(), data.end());
+            }},
+            {"my",  [&data]() {
+                intro_sort(data.begin(), data.end(), data.size(), less<>());
+            }},
     };
 
-    for (int s = 16; s < 100'000; s *= 2) {
-
-        for (int i = 1; i <= 6; i++) {
-            generator.set_data_by_type(i);
-            cout << generator.get_data_name(i) << ":\n";
-            for (auto &func: funcs) {
-                cout << func.first << ": ";
-                data = generator.get_data();
-                print_proc_time(func.second);
+    cout << "     size | ";
+    for (auto &func: funcs)
+        cout << func.first << " | ";
+    cout << '\n';
+    for (int s = 16; s < 1'000'000; s *= 2) {
+        gen.set_size(s);
+        cout.width(9);
+        cout << s << " | ";
+        for (auto &func: funcs) {
+            ll sum = 0;
+            int it = 3, types = 1;
+            for (int i = 0; i < it; i++) {
+                for (int t = 1; t <= types; t++) {
+                    gen.set_data_by_type(t);
+                    data = gen.get_data();
+                    sum += get_proc_time(func.second);
+                }
             }
-            cout << '\n';
+            pretty_print_time(sum / it * types);
+            cout << " | ";
         }
+        cout << '\n';
     }
 }
 
+void test() {
+    vector<int> data;
+    gen.set_size(200'000'000);
+    ll sum = 0;
+    cout << "intro sort\n";
+    for (int t = 1; t <= 6; t++) {
+        gen.set_data_by_type(t);
+        data = gen.get_data();
+        ll a = get_proc_time(intro_sort<vector<int>::iterator, less<>>, data.begin(), data.end(), data.size(),
+                             less<>{});
+        sum += a;
+        cout << gen.get_data_name(t) << ": ";
+        pretty_print_time(a);
+        cout << '\n';
+    }
+    cout << "avg: ";
+    pretty_print_time(sum / 6);
+    cout << "\n\n";
+
+    sum = 0;
+    cout << "stl sort\n";
+    for (int t = 1; t <= 6; t++) {
+        gen.set_data_by_type(t);
+        data = gen.get_data();
+        ll a = get_proc_time(sort<vector<int>::iterator>, data.begin(), data.end());
+        sum += a;
+        cout << gen.get_data_name(t) << ": ";
+        pretty_print_time(a);
+        cout << '\n';
+    }
+    cout << "avg: ";
+    pretty_print_time(sum / 6);
+    cout << "\n\n";
+}
+
 int main() {
-    test_funcs();
+    //test_funcs();
+    test();
 
     return 0;
 }

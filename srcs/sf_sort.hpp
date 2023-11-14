@@ -7,6 +7,7 @@
 #include <execution>
 #include <algorithm>
 
+#include "bitonic_sort.hpp"
 #include "thread_pool.h"
 
 template<typename iter, typename comp>
@@ -42,9 +43,11 @@ void set_pivot(iter dest, iter a, iter b, iter c, comp cmp) {
 template<typename iter, typename comp>
 iter partition(iter pivot, iter start, iter end, comp cmp) {
     while (true) {
-        while (start <= end && cmp(*start, *pivot)) start++;
-        while (start <= end && !cmp(*end, *pivot)) end--;
-        if (end < start) {
+        do start++;
+        while (cmp(*start, *pivot));
+        do end--;
+        while (cmp(*pivot, *end));
+        if (end <= start) {
             std::iter_swap(end, pivot);
             return end;
         }
@@ -77,8 +80,13 @@ void intro_sort(iter start, iter end, unsigned int depth_check, comp cmp) {
 }
 
 template<typename iter, typename comp>
-void par_quick_sort(iter start, iter end, int depth_check, comp cmp) {
+void par_intro_sort(iter start, iter end, int depth_check, comp cmp) {
     if (start + 1 >= end) return;
+
+    if (end - start <= 32) {
+        insertion_sort(start, end, cmp);
+        return;
+    }
 
     if (depth_check <= 0) {
         std::make_heap(start, end, cmp);
@@ -88,16 +96,16 @@ void par_quick_sort(iter start, iter end, int depth_check, comp cmp) {
 
     iter mid = start + (end - start) / 2;
     set_pivot(start, start + 1, mid, end - 1, cmp);
-    iter pivot = quick_sort_partition(start, start + 1, end - 1, cmp);
+    iter pivot = partition(start, start + 1, end - 1, cmp);
 
     depth_check = (depth_check >> 1) + (depth_check >> 2);
-    if (end - start < 1000) {
-        par_quick_sort(start, pivot, depth_check, cmp);
-        par_quick_sort(pivot + 1, end, depth_check, cmp);
+    if (end - start <= 1024) {
+        intro_sort(start, pivot, depth_check, cmp);
+        intro_sort(pivot + 1, end, depth_check, cmp);
     } else {
-        auto left_future = async(std::launch::async, par_quick_sort<iter, comp>, start, pivot,depth_check, cmp);
-        par_quick_sort(pivot + 1, end, depth_check, cmp);
-        left_future.wait();
+        auto left_thread = std::thread(par_intro_sort<iter, comp>, start, pivot, depth_check, cmp);
+        par_intro_sort(pivot + 1, end, depth_check, cmp);
+        left_thread.join();
     }
 }
 
@@ -108,12 +116,10 @@ void sf_sort(iter start, iter end, comp cmp) {
     unsigned int core_count = std::thread::hardware_concurrency();
     unsigned int size = end - start;
 
-    if (size <= 16) {
-        insertion_sort(start, end, cmp);
-    } else if (size >= 2'000'000) {
+    if (size >= 2'000'000) {
         bitonic_sort(start, end, cmp);
     } else {
-        par_quick_sort(start, end, 1, core_count, cmp);
+        par_intro_sort(start, end, 1, core_count, cmp);
     }
 }
 

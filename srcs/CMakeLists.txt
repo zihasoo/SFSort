@@ -1,7 +1,7 @@
 
 add_executable(
         SFSort
-        bitonic_sort.cu
+        bitonic_sort.hpp
         main.cu
         sf_sort.hpp
         data_generator.hpp
