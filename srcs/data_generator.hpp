@@ -10,7 +10,8 @@
 template<typename T>
 class data_generator {
     std::vector<T> origin;
-    std::mt19937 gen{15};
+    std::random_device rd;
+    std::mt19937 gen{rd()};
     std::uniform_int_distribution<int> num_uni;
     std::uniform_int_distribution<int> idx_uni;
 
@@ -32,22 +33,22 @@ public:
     void set_data_by_type(int type) {
         switch (type) {
             case 1:
-                all_rand();
+                make_all_rand();
                 break;
             case 2:
-                weak_rand();
+                make_weak_rand();
                 break;
             case 3:
-                weak_rand_rev();
+                make_weak_rand_rev();
                 break;
             case 4:
-                sort();
+                make_sort();
                 break;
             case 5:
-                sort_rev();
+                make_sort_rev();
                 break;
             case 6:
-                all_same();
+                make_all_same();
                 break;
             default:
                 break;
@@ -79,41 +80,37 @@ public:
         idx_uni.param(std::uniform_int<int>::param_type(0, s - 1));
     }
 
-    std::vector<T> get_data() {
+    std::vector<T>& get_data() {
         return origin;
     }
 
-    std::vector<T>& get_data_ref() {
-        return origin;
-    }
-
-    void all_rand() {
+    void make_all_rand() {
         for (T &x: origin) {
             x = num_uni(gen);
         }
     }
 
-    void sort() {
-        all_rand();
+    void make_sort() {
+        make_all_rand();
         std::sort(origin.begin(), origin.end());
     }
 
-    void sort_rev() {
-        all_rand();
+    void make_sort_rev() {
+        make_all_rand();
         std::sort(origin.begin(), origin.end(), std::greater<T>());
     }
 
-    void weak_rand() {
-        sort();
+    void make_weak_rand() {
+        make_sort();
         random_swap();
     }
 
-    void weak_rand_rev() {
-        sort_rev();
+    void make_weak_rand_rev() {
+        make_sort_rev();
         random_swap();
     }
 
-    void all_same() {
+    void make_all_same() {
         int v = num_uni(gen);
         std::fill(origin.begin(), origin.end(), v);
     }

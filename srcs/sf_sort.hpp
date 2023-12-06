@@ -79,7 +79,7 @@ void intro_sort(iter start, iter end, unsigned int depth_check, comp cmp) {
 }
 
 template<typename iter, typename comp>
-void par_intro_sort(iter start, iter end, unsigned int depth_check, unsigned int threshold, comp cmp, thread_pool &tp) {
+void par_pool_sort(iter start, iter end, unsigned int depth_check, unsigned int threshold, comp cmp, thread_pool &pool) {
     if (start + 1 >= end) return;
 
     if (end - start <= 32) {
@@ -102,8 +102,39 @@ void par_intro_sort(iter start, iter end, unsigned int depth_check, unsigned int
         intro_sort(start, pivot, depth_check, cmp);
         intro_sort(pivot + 1, end, depth_check, cmp);
     } else {
-        tp.register_job([start, pivot, depth_check, threshold, cmp, &tp]() { par_intro_sort(start, pivot, depth_check, threshold, cmp, tp); });
-        par_intro_sort(pivot + 1, end, depth_check, threshold, cmp, tp);
+        pool.register_job([start, pivot, depth_check, threshold, cmp, &pool]() {
+            par_pool_sort(start, pivot, depth_check, threshold, cmp, pool); });
+        par_pool_sort(pivot + 1, end, depth_check, threshold, cmp, pool);
+    }
+}
+
+template<typename iter, typename comp>
+void par_sort(iter start, iter end, unsigned int depth_check, unsigned int threshold, comp cmp) {
+    if (start + 1 >= end) return;
+
+    if (end - start <= 32) {
+        insertion_sort(start, end, cmp);
+        return;
+    }
+
+    if (depth_check <= 0) {
+        std::make_heap(start, end, cmp);
+        std::sort_heap(start, end, cmp);
+        return;
+    }
+
+    iter mid = start + (end - start) / 2;
+    set_pivot(start, start + 1, mid, end - 1, cmp);
+    iter pivot = partition(start, start, end, cmp);
+
+    depth_check = (depth_check >> 1) + (depth_check >> 2);
+    if (end - start <= threshold) {
+        intro_sort(start, pivot, depth_check, cmp);
+        intro_sort(pivot + 1, end, depth_check, cmp);
+    } else {
+        std::thread t1{par_sort<iter, comp>, start, pivot, depth_check, threshold, cmp};
+        par_sort(pivot + 1, end, depth_check, threshold, cmp);
+        t1.join();
     }
 }
 
@@ -117,7 +148,7 @@ void sf_sort(iter start, iter end, comp cmp) {
     if (size >= 2'000'000) {
         bitonic_sort(start, end, cmp);
     } else {
-        par_intro_sort(start, end, 1, core_count, cmp);
+        par_pool_sort(start, end, 1, core_count, cmp);
     }
 }
 
