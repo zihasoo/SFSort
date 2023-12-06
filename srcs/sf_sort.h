@@ -7,6 +7,7 @@
 #include <execution>
 #include <algorithm>
 
+#include "bitonic_sort.h"
 #include "thread_pool.h"
 
 template<typename iter, typename comp>
@@ -78,6 +79,7 @@ void intro_sort(iter start, iter end, unsigned int depth_check, comp cmp) {
     intro_sort(pivot + 1, end, depth_check, cmp);
 }
 
+//스레드 풀을 루트에서 만들어서 넘겨줘야 함.
 template<typename iter, typename comp>
 void par_pool_sort(iter start, iter end, unsigned int depth_check, unsigned int threshold, comp cmp, thread_pool &pool) {
     if (start + 1 >= end) return;
@@ -108,6 +110,10 @@ void par_pool_sort(iter start, iter end, unsigned int depth_check, unsigned int 
     }
 }
 
+//start, end: [start, end) 범위의 배열에 대한 포인터
+//depth check: 최초 크기는 배열 길이. 매 재귀마다 0.75배로 줄여 나감. 0이 되면 힙소트로 전환
+//threshold: 싱글 스레드로 전환하는 기준 크기
+//cmp: 비교 함수
 template<typename iter, typename comp>
 void par_sort(iter start, iter end, unsigned int depth_check, unsigned int threshold, comp cmp) {
     if (start + 1 >= end) return;
@@ -138,18 +144,52 @@ void par_sort(iter start, iter end, unsigned int depth_check, unsigned int thres
     }
 }
 
+void cpu_gpu_sort(int * start, int * end, unsigned int core_count) {
+    using ull = unsigned long long;
+    ull cpu_size = (end - start) / 5 * 2;
+    ull gpu_size = (end - start) / 5 * 3 + ((end - start) % 5);
+    ull cpu_bytes = cpu_size * sizeof(int);
+    ull gpu_bytes = gpu_size * sizeof(int);
+    int *arr1 = new int[cpu_size];
+    int *arr2;
+
+    ull padded_size = 1;
+    while (padded_size < gpu_size) {
+        padded_size <<= 1;
+    }
+    arr2 = new int[padded_size];
+
+    memcpy(arr1, start, cpu_bytes);
+    memcpy(arr2, start + cpu_size, gpu_bytes);
+    for (ull i = gpu_size; i < padded_size; i++) {
+        arr2[i] = INT_MAX;
+    }
+
+    auto t = std::thread(bitonic_sort, arr2, arr2 + padded_size, gpu_bytes);
+    par_sort(arr1, arr1 + cpu_size, cpu_size, cpu_size / core_count, std::less<>{});
+    t.join();
+
+    std::merge(arr1, arr1 + cpu_size, arr2, arr2 + gpu_size, start);
+
+    delete[] arr1;
+    delete[] arr2;
+}
+
 template<typename iter, typename comp>
 void sf_sort(iter start, iter end, comp cmp) {
     if (start >= end) return;
 
-    unsigned int core_count = std::thread::hardware_concurrency();
     unsigned int size = end - start;
 
-    if (size >= 2'000'000) {
-        bitonic_sort(start, end, cmp);
-    } else {
-        par_pool_sort(start, end, 1, core_count, cmp);
-    }
+    if (size < 10000)
+        return intro_sort(start, end, end - start, cmp);
+
+    unsigned int core_count = std::thread::hardware_concurrency();
+
+    if (size >= 100'000'000)
+        cpu_gpu_sort(&*start, &*end, core_count);
+
+    par_sort(start, end, size, size / core_count, cmp);
 }
 
 #endif

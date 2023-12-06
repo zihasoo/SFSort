@@ -2,6 +2,7 @@
 
 using namespace std;
 
+//벡터 출력
 ostream &operator<<(ostream &out, const vector<int> &v) {
     if (v.empty()) {
         return out << "[]";
@@ -14,15 +15,16 @@ ostream &operator<<(ostream &out, const vector<int> &v) {
     return out;
 }
 
-void pretty_print_time(long long c) {
-    cout.precision(2);
+std::string get_pretty_time(long long c) {
+    std::stringstream ss;
     if (c >= 1000ll * 1000 * 1000) {
-        cout << fixed << (c / (1000ll * 1000)) / 1000.0 << "s";
+        ss << fixed << (c / (1000ll * 1000)) / 1000.0 << "s";
     } else if (c >= 1000ll * 1000) {
-        cout << fixed << (c / 1000l) / 1000.0 << "ms";
+        ss << fixed << (c / 1000l) / 1000.0 << "ms";
     } else if (c >= 1000ll) {
-        cout << fixed << c / 1000.0 << "us";
+        ss << fixed << c / 1000.0 << "us";
     } else {
-        cout << fixed << c << "ns";
+        ss << fixed << c << "ns";
     }
+    return ss.str();
 }

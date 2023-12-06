@@ -3,12 +3,14 @@
 
 #include <iostream>
 #include <chrono>
+#include <string>
+#include <sstream>
 #include <utility>
 #include <vector>
 
 std::ostream &operator<<(std::ostream &out, const std::vector<int> &v);
 
-void pretty_print_time(long long c);
+std::string get_pretty_time(long long c);
 
 template<typename iter, typename comp>
 bool confirm_sorted(iter begin, iter end, comp cmp) {

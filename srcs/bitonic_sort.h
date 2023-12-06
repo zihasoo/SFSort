@@ -4,6 +4,6 @@
 
 #include "utility.h"
 
-void bitonic_sort(int* begin, int* end, unsigned long long real_bytes);
+void bitonic_sort(int* start, int* end, unsigned long long real_bytes);
 
 #endif //SFSORT_BITONIC_SORT_H

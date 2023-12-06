@@ -29,16 +29,16 @@ void checkCuda(cudaError_t err) {
     }
 }
 
-void bitonic_sort(int *begin, int *end, unsigned long long real_bytes) {
+void bitonic_sort(int *start, int *end, unsigned long long real_bytes) {
     int *kernel_ptr;
-    size_t size = (end - begin);
+    size_t size = (end - start);
     size_t bytes = size * sizeof(int);
 
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, 0);
 
     checkCuda(cudaMalloc((void **) &kernel_ptr, bytes));
-    cudaMemcpy(kernel_ptr, begin, bytes, cudaMemcpyHostToDevice);
+    cudaMemcpy(kernel_ptr, start, bytes, cudaMemcpyHostToDevice);
 
     dim3 blocks(std::max(1ull, size / props.maxThreadsPerBlock), 1);
     dim3 threads(props.maxThreadsPerBlock, 1);
@@ -49,6 +49,6 @@ void bitonic_sort(int *begin, int *end, unsigned long long real_bytes) {
             bitonic_sort_step<<<blocks, threads>>>(kernel_ptr, j, k);
         }
     }
-    checkCuda(cudaMemcpy(begin, kernel_ptr, real_bytes, cudaMemcpyDeviceToHost));
+    checkCuda(cudaMemcpy(start, kernel_ptr, real_bytes, cudaMemcpyDeviceToHost));
     checkCuda(cudaFree(kernel_ptr));
 }
