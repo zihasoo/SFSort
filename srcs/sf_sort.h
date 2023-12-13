@@ -187,7 +187,7 @@ void sf_sort(iter start, iter end, comp cmp) {
     unsigned int core_count = std::thread::hardware_concurrency();
 
     if (size >= 100'000'000)
-        cpu_gpu_sort(&*start, &*end, core_count);
+        return cpu_gpu_sort(&*start, &*end, core_count);
 
     par_sort(start, end, size, size / core_count, cmp);
 }

@@ -92,12 +92,12 @@ public:
 
     void make_sort() {
         make_all_rand();
-        std::sort(origin.begin(), origin.end());
+        std::sort(std::execution::par_unseq, origin.begin(), origin.end());
     }
 
     void make_sort_rev() {
         make_all_rand();
-        std::sort(origin.begin(), origin.end(), std::greater<T>());
+        std::sort(std::execution::par_unseq, origin.begin(), origin.end(), std::greater<T>());
     }
 
     void make_weak_rand() {

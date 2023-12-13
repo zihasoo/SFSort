@@ -14,28 +14,30 @@ unsigned core_cnt = thread::hardware_concurrency();
 data_generator<int> gen;
 
 void benchmark_by_data_size() {
-    vector<int> data;
+    int *st = new int[40'000'000], *ed;
     vector<pair<string_view, function<void(void)>>> funcs = {
-            {"sf",   [&data]() {
-                sf_sort(data.begin(), data.end(), less<>{});
-            }},
-//            {"pool", [&data]() {
-//                thread_pool pool{core_cnt};
-//                par_pool_sort(data.begin(), data.end(), data.size(), data.size() / core_cnt, less<>{}, pool);
+//            {"sf",   [&data]() {
+//                sf_sort(data.begin(), data.end(), less<>{});
 //            }},
+            {"single core", [&st, &ed]() {
+                intro_sort(st, ed, ed - st, less<>{});
+            }},
+            {"dual core", [&st, &ed]() {
+                par_sort(st, ed, ed - st, (ed - st) / 2, less<>{});
+            }},
 //            {"par",  [&data]() {
 //                sort(execution::par_unseq, data.begin(), data.end());
 //            }},
-            {"seq",  [&data]() {
-                sort(data.begin(), data.end());
-            }},
+//            {"seq",  [&data]() {
+//                sort(data.begin(), data.end());
+//            }},
     };
 
     cout << "     size | ";
     for (auto &func: funcs)
         cout << func.first << " | ";
     cout << '\n';
-    for (int size = 2; size < 400'000'000; size += (size >> 1)) {
+    for (int size = 2; size < 40'000'000; size += (size >> 1)) {
         gen.set_size(size);
         cout.width(9);
         cout << size << " | ";
@@ -45,16 +47,18 @@ void benchmark_by_data_size() {
             for (int t = 1; t <= type_cnt; t++) {
                 gen.set_data_by_type(t);
                 for (int j = 0; j < funcs.size(); j++) {
-                    data = gen.get_data();
+                    memcpy(st, gen.get_data().begin().operator->(), size * sizeof(int));
+                    ed = st + size;
                     sums[j] += get_proc_time(funcs[j].second);
                 }
             }
         }
-        for (i64 s : sums) {
+        for (i64 s: sums) {
             cout << get_pretty_time(s / (it_cnt * type_cnt)) << " | ";
         }
         cout << '\n';
     }
+    delete[] st;
 }
 
 void benchmark_by_data_type() {
@@ -102,7 +106,7 @@ void benchmark_by_data_type() {
 
 int main() {
     benchmark_by_data_size();
-    benchmark_by_data_type();
+    //benchmark_by_data_type();
 
     return 0;
 }
