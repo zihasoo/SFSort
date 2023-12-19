@@ -23,12 +23,6 @@ __global__ void bitonic_sort_step(int *ptr, int j, int k) {
     }
 }
 
-void checkCuda(cudaError_t err) {
-    if (err != cudaSuccess) {
-        std::cout << cudaGetErrorString(err) << '\n';
-    }
-}
-
 void bitonic_sort(int *start, int *end, unsigned long long real_bytes) {
     int *kernel_ptr;
     size_t size = (end - start);
@@ -37,7 +31,7 @@ void bitonic_sort(int *start, int *end, unsigned long long real_bytes) {
     cudaDeviceProp props;
     cudaGetDeviceProperties(&props, 0);
 
-    checkCuda(cudaMalloc((void **) &kernel_ptr, bytes));
+    cudaMalloc((void **) &kernel_ptr, bytes);
     cudaMemcpy(kernel_ptr, start, bytes, cudaMemcpyHostToDevice);
 
     dim3 blocks(std::max(1ull, size / props.maxThreadsPerBlock), 1);
@@ -49,6 +43,39 @@ void bitonic_sort(int *start, int *end, unsigned long long real_bytes) {
             bitonic_sort_step<<<blocks, threads>>>(kernel_ptr, j, k);
         }
     }
-    checkCuda(cudaMemcpy(start, kernel_ptr, real_bytes, cudaMemcpyDeviceToHost));
-    checkCuda(cudaFree(kernel_ptr));
+    cudaMemcpy(start, kernel_ptr, real_bytes, cudaMemcpyDeviceToHost);
+    cudaFree(kernel_ptr);
 }
+
+/*
+void cpu_gpu_sort(int * start, int * end, unsigned int core_count) {
+    using ull = unsigned long long;
+    ull cpu_size = (end - start) / 5 * 2;
+    ull gpu_size = (end - start) / 5 * 3 + ((end - start) % 5);
+    ull cpu_bytes = cpu_size * sizeof(int);
+    ull gpu_bytes = gpu_size * sizeof(int);
+    int *arr1 = new int[cpu_size];
+    int *arr2;
+
+    ull padded_size = 1;
+    while (padded_size < gpu_size) {
+        padded_size <<= 1;
+    }
+    arr2 = new int[padded_size];
+
+    memcpy(arr1, start, cpu_bytes);
+    memcpy(arr2, start + cpu_size, gpu_bytes);
+    for (ull i = gpu_size; i < padded_size; i++) {
+        arr2[i] = INT_MAX;
+    }
+
+    auto t = std::thread(bitonic_sort, arr2, arr2 + padded_size, gpu_bytes);
+    par_sort(arr1, arr1 + cpu_size, cpu_size, cpu_size / core_count, std::less<>{});
+    t.join();
+
+    std::merge(arr1, arr1 + cpu_size, arr2, arr2 + gpu_size, start);
+
+    delete[] arr1;
+    delete[] arr2;
+}
+*/

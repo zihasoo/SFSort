@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 3.26)
 
-project(SFSort CUDA)
+project(Main)
 
-set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CXX_STANDARD 20)
 
-add_subdirectory(./srcs)
+add_subdirectory(./utility)
+add_subdirectory(./sort_algorithms)
+add_executable(Main main.cpp)
 
-set_target_properties(SFSort PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+target_link_libraries(Main PUBLIC Utility)
+target_link_libraries(Main PUBLIC SortAlgorithms)
